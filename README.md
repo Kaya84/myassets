@@ -1,6 +1,9 @@
 # myassets GLPI plugin
 
-Add your plugin description here.
+This plugin allow to see assets in charge of Users
+
+## How it work
+When you select a member from "User" dropbox, when that user is logged in he can see the list of assets under Assets -> Myassets
 
 ## Contributing
 
