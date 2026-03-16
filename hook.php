@@ -1,54 +1,56 @@
 <?php
-/*
- -------------------------------------------------------------------------
- myassets plugin for GLPI
- Copyright (C) 2020 by the myassets Development Team.
 
- https://github.com/pluginsGLPI/myassets
- -------------------------------------------------------------------------
-
- LICENSE
-
- This file is part of myassets.
-
- myassets is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 2 of the License, or
- (at your option) any later version.
-
- myassets is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with myassets. If not, see <http://www.gnu.org/licenses/>.
- --------------------------------------------------------------------------
+/**
+ * Hook per l'interfaccia semplificata (Helpdesk)
+ * Aggiunge la voce "TEST" nel menu principale
  */
 
 /**
- * Plugin install process
+ * Aggiunge la voce TEST al menu dell'interfaccia semplificata.
+ * Questa funzione viene chiamata da GLPI tramite il hook
+ * 'helpdesk_menu_entry'.
  *
- * @return boolean
+ * @return array
+ */
+function plugin_myassets_helpdesk_menu_entry() {
+    return [
+	    'default'   => '/plugins/myplugin/front/model.php',
+        'title' => __('MY ', 'myassets'),
+        'icon'  => 'ti ti-test-pipe', // Icona Tabler Icons (usata da GLPI 10)
+        'page'  => Plugin::getWebDir('myassets') . '/front/test.php',
+		            'content'   => [true]
+
+    ];
+}
+/**
+ * Installazione del plugin myassets
  */
 function plugin_myassets_install() {
-
-
-   $config = new Config();
-   $config->setConfigurationValues('plugin:Myassets', ['configuration' => false]);
-
-   ProfileRight::addProfileRights(['myassets:read']);
-
-
-
-   return true;
+    // Nessuna tabella DB necessaria per questo plugin
+    return true;
 }
 
 /**
- * Plugin uninstall process
- *
- * @return boolean
+ * Disinstallazione del plugin myassets
  */
 function plugin_myassets_uninstall() {
-   return true;
+    // Nessuna tabella DB da rimuovere
+    return true;
+}
+
+function plugin_myplugin_redefine_menus($menu) {
+    if (empty($menu)) {
+        return $menu;
+    }
+
+//    if (array_key_exists('myplugin', $menu) === false && $_SESSION['glpiactiveprofile']['interface'] == 'helpdesk') {
+        $menu['myplugin'] = [
+            'default'   => Plugin::getWebDir('myassets') . '/front/index.php',
+            'title'     => __('I miei dispositivi', 'myassets'),
+			'icon'  => 'ti ti-building-store', // Icona Tabler Icons (usata da GLPI 10)
+            'content'   => [true]
+        ];
+  //  }
+
+    return $menu;
 }
