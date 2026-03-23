@@ -162,7 +162,7 @@ foreach ($asset_types as $itemtype => $meta) {
     }
 }
 
-$base_url = Plugin::getWebDir('myassets') . '/front/test2.php';
+$base_url = Plugin::getWebDir('myassets') . '/front/index.php';
 
 ?>
 
