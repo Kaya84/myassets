@@ -8,58 +8,54 @@ include('../../../inc/includes.php');
 
 Session::checkLoginUser();
 
-$title = __('I miei dispositivi', 'testmenu');
+$title = __('I miei dispositivi', 'myassets');
 
 if (Session::getCurrentInterface() === 'helpdesk') {
     Html::helpHeader($title);
 } else {
-    Html::header($title, $_SERVER['PHP_SELF'], 'plugins', 'testmenu');
+    Html::header($title, $_SERVER['PHP_SELF'], 'plugins', 'myassets');
 }
 
 $user_id = (int) Session::getLoginUserID();
+
+// Filtro attivo: 'all' oppure 'inuso' (states_id = 5)
+$filter = isset($_GET['status']) && $_GET['status'] === 'all' ? 'all' : '5';
 
 $asset_types = [
     'Computer' => [
         'table' => 'glpi_computers',
         'label' => 'Computer',
         'icon'  => 'ti ti-device-desktop',
-        'link'  => 'computer.form.php',
     ],
     'Monitor' => [
         'table' => 'glpi_monitors',
         'label' => 'Monitor',
         'icon'  => 'ti ti-device-tv',
-        'link'  => 'monitor.form.php',
     ],
     'NetworkEquipment' => [
         'table' => 'glpi_networkequipments',
         'label' => 'Apparato di rete',
         'icon'  => 'ti ti-network',
-        'link'  => 'networkequipment.form.php',
     ],
     'Peripheral' => [
         'table' => 'glpi_peripherals',
         'label' => 'Periferica',
         'icon'  => 'ti ti-device-usb',
-        'link'  => 'peripheral.form.php',
     ],
     'Phone' => [
         'table' => 'glpi_phones',
         'label' => 'Telefono',
         'icon'  => 'ti ti-phone',
-        'link'  => 'phone.form.php',
     ],
     'Printer' => [
         'table' => 'glpi_printers',
         'label' => 'Stampante',
         'icon'  => 'ti ti-printer',
-        'link'  => 'printer.form.php',
     ],
 ];
 
 global $DB, $CFG_GLPI;
 
-// Mappa itemtype → tabella modelli e campo ID
 $model_tables = [
     'Computer'         => 'glpi_computermodels',
     'Monitor'          => 'glpi_monitormodels',
@@ -87,28 +83,31 @@ foreach ($asset_types as $itemtype => $meta) {
         continue;
     }
 
-    // Campo modello specifico per questo tipo di asset
-    $model_id_key = $model_id_fields[$itemtype] ?? null;
+    $model_id_key  = $model_id_fields[$itemtype] ?? null;
     $select_fields = ['id', 'name', 'serial', 'otherserial', 'locations_id', 'states_id', 'manufacturers_id'];
     if ($model_id_key) {
         $select_fields[] = $model_id_key;
     }
 
-    // Recupera i campi base dell'asset
+    $where = [
+        'users_id'    => $user_id,
+        'is_deleted'  => 0,
+        'is_template' => 0
+    ];
+
+    if ($filter == '5') {
+        $where['states_id'] = 5;
+    }
+
     $iterator = $DB->request([
         'SELECT'  => $select_fields,
         'FROM'    => $table,
-        'WHERE'   => [
-            'users_id'    => $user_id,
-            'is_deleted'  => 0,
-            'is_template' => 0,
-        ],
+        'WHERE'   => $where,
         'ORDERBY' => 'name ASC',
     ]);
 
     $rows = [];
     foreach ($iterator as $row) {
-        // Location
         $location_name = '';
         if (!empty($row['locations_id'])) {
             $loc = $DB->request(['SELECT' => ['name'], 'FROM' => 'glpi_locations', 'WHERE' => ['id' => $row['locations_id']]]);
@@ -117,7 +116,6 @@ foreach ($asset_types as $itemtype => $meta) {
             }
         }
 
-        // Stato
         $state_name = '';
         if (!empty($row['states_id'])) {
             $sta = $DB->request(['SELECT' => ['name'], 'FROM' => 'glpi_states', 'WHERE' => ['id' => $row['states_id']]]);
@@ -126,7 +124,6 @@ foreach ($asset_types as $itemtype => $meta) {
             }
         }
 
-        // Marca (produttore)
         $manufacturer_name = '';
         if (!empty($row['manufacturers_id'])) {
             $man = $DB->request(['SELECT' => ['name'], 'FROM' => 'glpi_manufacturers', 'WHERE' => ['id' => $row['manufacturers_id']]]);
@@ -135,10 +132,8 @@ foreach ($asset_types as $itemtype => $meta) {
             }
         }
 
-        // Modello
-        $model_name   = '';
-        $model_id_key = $model_id_fields[$itemtype] ?? null;
-        $model_table  = $model_tables[$itemtype] ?? null;
+        $model_name  = '';
+        $model_table = $model_tables[$itemtype] ?? null;
         if ($model_id_key && $model_table && !empty($row[$model_id_key]) && $DB->tableExists($model_table)) {
             $mod = $DB->request(['SELECT' => ['name'], 'FROM' => $model_table, 'WHERE' => ['id' => $row[$model_id_key]]]);
             if ($mod_row = $mod->current()) {
@@ -167,16 +162,33 @@ foreach ($asset_types as $itemtype => $meta) {
     }
 }
 
+$base_url = Plugin::getWebDir('myassets') . '/front/test2.php';
+
 ?>
 
 <div class="container-fluid mt-4">
 
-    <div class="d-flex align-items-center mb-4 gap-3">
-        <h2 class="mb-0">
-            <i class="ti ti-devices me-2 text-primary"></i>
-            <?= htmlspecialchars($title) ?>
-        </h2>
-        <span class="badge bg-primary fs-6"><?= $total ?> dispositivo/i</span>
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <h2 class="mb-0">
+                <i class="ti ti-devices me-2 text-primary"></i>
+                <?= htmlspecialchars($title) ?>
+            </h2>
+            <span class="badge bg-primary fs-6"><?= $total ?> dispositivo/i</span>
+        </div>
+
+        <div class="btn-group" role="group">
+            <a href="<?= $base_url ?>?status=5"
+               class="btn <?= $filter == '5' ? 'btn-primary' : 'btn-outline-primary' ?>">
+                <i class="ti ti-list me-1"></i>
+                Solo dispositivi in uso
+            </a>
+            <a href="<?= $base_url ?>?status=all"
+               class="btn <?= $filter == 'all' ? 'btn-primary' : 'btn-outline-primary' ?>">
+                <i class="ti ti-building me-1"></i>
+                Tutti i dispositivi
+            </a>
+        </div>
     </div>
 
     <?php if ($total === 0): ?>
@@ -185,8 +197,15 @@ foreach ($asset_types as $itemtype => $meta) {
             <div class="card-body text-center py-5">
                 <i class="ti ti-device-desktop-off text-muted" style="font-size: 3rem;"></i>
                 <p class="mt-3 text-muted fs-4">
-                    Nessun dispositivo collegato al tuo account.
+                    <?= $filter === 'inuso'
+                        ? 'Nessun dispositivo "In uso presso uffici" collegato al tuo account.'
+                        : 'Nessun dispositivo collegato al tuo account.' ?>
                 </p>
+                <?php if ($filter === 'inuso'): ?>
+                    <a href="<?= $base_url ?>?filter=all" class="btn btn-outline-secondary mt-2">
+                        <i class="ti ti-list me-1"></i> Mostra tutti i dispositivi
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -194,8 +213,8 @@ foreach ($asset_types as $itemtype => $meta) {
 
         <?php foreach ($devices as $itemtype => $group): ?>
             <?php
-                $meta     = $group['meta'];
-                $rows     = $group['rows'];
+                $meta = $group['meta'];
+                $rows = $group['rows'];
             ?>
             <div class="card mb-4">
                 <div class="card-header">
