@@ -1,9 +1,4 @@
 <?php
-
-/**
- * Pagina TEST - Elenco dispositivi collegati all'utente loggato
- */
-
 include('../../../inc/includes.php');
 
 Session::checkLoginUser();
@@ -229,6 +224,7 @@ $base_url = Plugin::getWebDir('myassets') . '/front/index.php';
                         <table class="table table-hover table-striped mb-0">
                             <thead class="table-light">
                                 <tr>
+                                    <th>Id</th>
                                     <th>Nome</th>
                                     <th>Marca</th>
                                     <th>Modello</th>
@@ -241,7 +237,8 @@ $base_url = Plugin::getWebDir('myassets') . '/front/index.php';
                             <tbody>
                                 <?php foreach ($rows as $row): ?>
                                 <tr>
-                                    <td>
+                                    <td><?= htmlspecialchars($row['id'] ?: '—') ?></td>
+									<td>
                                         <i class="<?= htmlspecialchars($meta['icon']) ?> me-1 text-muted"></i>
                                         <strong><?= htmlspecialchars($row['name'] ?: '—') ?></strong>
                                     </td>
