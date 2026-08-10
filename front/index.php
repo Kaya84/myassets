@@ -3,6 +3,8 @@ include('../../../inc/includes.php');
 
 Session::checkLoginUser();
 
+global $DB, $CFG_GLPI;
+
 $title = __('I miei dispositivi', 'myassets');
 
 if (Session::getCurrentInterface() === 'helpdesk') {
@@ -14,7 +16,7 @@ if (Session::getCurrentInterface() === 'helpdesk') {
 $user_id = (int) Session::getLoginUserID();
 
 // Filtro attivo: 'all' oppure 'inuso' (states_id = 5)
-$filter = isset($_GET['status']) && $_GET['status'] === 'all' ? 'all' : '5';
+$filter = isset($_GET['status']) && $_GET['status'] === '5' ? '5' : 'all';
 
 $asset_types = [
     'Computer' => [
@@ -48,8 +50,18 @@ $asset_types = [
         'icon'  => 'ti ti-printer',
     ],
 ];
-
-global $DB, $CFG_GLPI;
+// Array utilizzato poi per costruire i "colori" in base allo stato degli asset, sono i css di bootstrap
+$state_classes = [
+	'Non trovato'           => 'bg-warning text-dark',     
+	'Rottamato'             => 'bg-dark text-white',       
+	'Da rottamare'          => 'bg-danger text-white',     
+	'In magazzino'          => 'bg-info text-dark',        
+	'In uso presso uffici'  => 'bg-success text-white',    
+	'Consegnato ad Esterni' => 'bg-primary text-white',    
+	'Rubato'                => 'bg-danger text-white',     
+	'Altro'                 => 'bg-secondary text-white',  
+	'Nuovo'                 => 'bg-success text-white'     
+];
 
 $model_tables = [
     'Computer'         => 'glpi_computermodels',
@@ -259,13 +271,36 @@ $base_url = Plugin::getWebDir('myassets') . '/front/index.php';
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php if (!empty($row['state_name'])): ?>
+									
+									<?php 
+
+
+									if (!empty($row['state_name'])): 
+										$state_name = $row['state_name'];
+										
+										// 2. Cerca la classe nell'array. 
+										// Se lo stato non è nell'elenco (es. un nuovo stato aggiunto in futuro), usa 'bg-secondary text-white' come default.
+										$badge_class = $state_classes[$state_name] ?? 'bg-secondary text-white';
+									?>
+										<span class="badge <?= $badge_class ?>">
+											<?= htmlspecialchars($state_name) ?>
+										</span>
+									<?php else: ?>
+										<span class="text-muted">—</span>
+									<?php endif; ?>
+																		
+									
+									
+                                        <?php /*if (!empty($row['state_name'])): ?>
                                             <span class="badge bg-info text-dark">
                                                 <?= htmlspecialchars($row['state_name']) ?>
                                             </span>
                                         <?php else: ?>
                                             <span class="text-muted">—</span>
-                                        <?php endif; ?>
+                                        <?php endif; */ ?>
+										
+										
+										
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
